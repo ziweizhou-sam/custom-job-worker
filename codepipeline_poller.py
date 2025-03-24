@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class CodePipelinePoller:
     def __init__(self):
-        self.codepipeline_client = boto3.client('codepipeline')
+        self.codepipeline_client = boto3.client('codepipeline', 'us-east-1')
         self.polling_interval = 60  # 60 seconds = 1 minute
 
     def poll_jobs(self):
