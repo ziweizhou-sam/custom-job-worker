@@ -1,3 +1,5 @@
+import json
+
 import boto3
 import time
 import logging
@@ -9,6 +11,7 @@ logger = logging.getLogger(__name__)
 class CodePipelinePoller:
     def __init__(self):
         self.codepipeline_client = boto3.client('codepipeline', 'us-east-1')
+        self.lambda_client = boto3.client('lambda', 'us-east-1')
         self.polling_interval = 60  # 60 seconds = 1 minute
 
     def poll_jobs(self):
@@ -47,13 +50,14 @@ class CodePipelinePoller:
             )
 
             # Your job processing logic goes here
+            self.invoke_lambda(job_id)
 
             # After successful processing, mark the job as succeeded
-            self.codepipeline_client.put_job_success_result(
-                jobId=job_id
-            )
-
-            logger.info(f"Successfully processed job: {job_id}")
+            # self.codepipeline_client.put_job_success_result(
+            #     jobId=job_id
+            # )
+            #
+            # logger.info(f"Successfully processed job: {job_id}")
 
         except ClientError as e:
             logger.error(f"Error processing job: {str(e)}")
@@ -66,6 +70,18 @@ class CodePipelinePoller:
                     'message': str(e)
                 }
             )
+
+    def invoke_lambda(self, job_id: str):
+        try:
+            # Add your Lambda invocation logic here
+            response = self.lambda_client.invoke(
+                FunctionName='SampleCloudWatchAgent',
+                InvocationType='Event',
+                Payload=json.dumps({"job_id": job_id})
+            )
+            logger.info(f"Lambda invoked successfully: {response}")
+        except ClientError as e:
+            logger.error(f"Error invoking Lambda: {str(e)}")
 
     def start_polling(self):
         logger.info("Starting CodePipeline job poller...")
